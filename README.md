@@ -1,2 +1,2 @@
-# Particle Oxygen Relationship calculator
+# Particle size vs. Oxygen Relationship calculator
 
