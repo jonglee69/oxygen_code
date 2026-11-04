@@ -21,10 +21,10 @@ A spherical particle of diameter *D* carries a uniform oxide shell of thickness 
 
 Default densities (g/cm³): Ti 4.506, TiO₂ 4.23 (rutile), Zr 6.52, ZrO₂ 5.68, Hf 13.31, HfO₂ 9.68.
 
-The original notebook `particle_ssa_oxygen.ipynb` uses ρ_M·V_particle (whole sphere) instead of ρ_M·V_core for the metal mass. This counts the shell volume twice and gives lower oxygen for fine powders (e.g. 18.1 vs 34.8 wt.% at 0.2 µm with a 50 nm oxide; 2.10 vs 2.22 wt.% at 1 µm with 10 nm). Select **"Original notebook formula"** in the web calculator to reproduce the notebook curves exactly.
+**Correction (Nov 2026):** versions of `particle_ssa_oxygen.ipynb` before commit `ed2dcda` used ρ_M·V_particle (whole sphere) instead of ρ_M·V_core for the metal mass. This counted the shell volume twice and underestimated oxygen by about 6t/D — e.g. 2.10 vs 2.22 wt.% at 1 µm with a 10 nm oxide, 18.1 vs 34.8 wt.% at 0.2 µm with 50 nm, and less than 1 % for particles above 10 µm. Select **"Original notebook formula"** in the web calculator (or use the `*_legacy` CSV columns) to reproduce the earlier curves.
 
 ## Notebook
-`particle_ssa_oxygen.ipynb` — original Python script (NumPy, Matplotlib) that writes a CSV and plots Ti with 5, 10, 20 and 50 nm oxide layers.
+`particle_ssa_oxygen.ipynb` — Python script (NumPy, Matplotlib). `oxygen_wt(D_um, t_nm, metal="Ti")` returns the oxygen content; the notebook writes a CSV (corrected and legacy columns) and plots Ti with 5, 10, 20 and 50 nm oxide layers.
 
 ## License
 MIT © 2025 JongHyeon Lee, Nanomaterial Processing Lab, Chungnam National University
