@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oxygen Content Calculator</title>
+<meta name="description" content="Oxygen content of Ti, Zr and Hf powders from particle size and surface oxide thickness (core–shell model). NMPL, Chungnam National University.">
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--ink:#14213d;--muted:#5b6b82;--line:#dde3ec;--accent:#0f3b7a;--accent2:#2f7dd3;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1622;--card:#172131;--ink:#e6edf7;--muted:#9aabc3;--line:#2a374c;--accent:#7fb0ff;--accent2:#4f9cf0;--warn:#f59e0b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif}
+header{background:#0f3b7a;color:#fff;padding:28px 16px}
+header .in,main{max-width:1080px;margin:0 auto}
+header h1{margin:0 0 4px;font-size:26px}
+header p{margin:0;opacity:.85}
+main{padding:20px 16px 48px;display:grid;gap:18px;grid-template-columns:340px 1fr}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px}
+h2{font-size:16px;margin:0 0 12px;color:var(--accent)}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);font-size:15px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.res{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+.res div{border:1px solid var(--line);border-radius:8px;padding:10px}
+.res b{display:block;font-size:22px}
+.res span{font-size:12px;color:var(--muted)}
+.note{font-size:12px;color:var(--muted)}
+.warn{color:var(--warn);font-size:13px;min-height:1em}
+button{background:var(--accent2);color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer}
+button.sec{background:transparent;color:var(--accent2);border:1px solid var(--accent2)}
+svg{width:100%;height:auto;display:block}
+.axis{stroke:var(--muted);stroke-width:1}
+.grid{stroke:var(--line);stroke-width:1}
+.tick{fill:var(--muted);font-size:11px}
+.legend{font-size:12px;fill:var(--ink)}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+code{font-size:12px}
+.full{grid-column:1/-1}
+</style>
+</head>
+<body>
+<header><div class="in">
+  <h1>Particle size – oxygen content calculator</h1>
+  <p>Oxygen content of Ti, Zr and Hf powders covered by a surface oxide layer · Nanomaterial Processing Lab, Chungnam National University</p>
+</div></header>
+<main>
+  <section class="card">
+    <h2>Input</h2>
+    <label for="metal">Metal / oxide</label>
+    <select id="metal">
+      <option value="Ti">Ti / TiO₂</option>
+      <option value="Zr">Zr / ZrO₂</option>
+      <option value="Hf">Hf / HfO₂</option>
+    </select>
+    <div class="row">
+      <div><label for="rhoM">Metal density (g/cm³)</label><input id="rhoM" type="number" step="0.001"></div>
+      <div><label for="rhoO">Oxide density (g/cm³)</label><input id="rhoO" type="number" step="0.001"></div>
+    </div>
+    <div class="row">
+      <div><label for="dia">Particle diameter (µm)</label><input id="dia" type="number" value="10" min="0" step="any"></div>
+      <div><label for="tox">Oxide thickness (nm)</label><input id="tox" type="number" value="10" min="0" step="any"></div>
+    </div>
+    <label for="model">Model</label>
+    <select id="model">
+      <option value="core">Core–shell: metal core + oxide shell (recommended)</option>
+      <option value="legacy">Original notebook formula (metal mass over full sphere)</option>
+    </select>
+    <p class="warn" id="warn"></p>
+
+    <h2 style="margin-top:18px">Inverse calculation</h2>
+    <label for="target">Target oxygen content (wt.%)</label>
+    <input id="target" type="number" value="0.2" min="0" step="any">
+    <p class="note" id="inv"></p>
+  </section>
+
+  <section class="card">
+    <h2>Result</h2>
+    <div class="res">
+      <div><b id="rO">–</b><span>Oxygen, wt.%</span></div>
+      <div><b id="rSSA">–</b><span>Specific surface area, m²/g</span></div>
+      <div><b id="rVf">–</b><span>Oxide volume fraction, %</span></div>
+    </div>
+    <h2 style="margin-top:18px">Oxygen content vs. particle diameter</h2>
+    <svg id="plot" viewBox="0 0 680 420" role="img" aria-label="Oxygen content versus particle diameter"></svg>
+    <div class="inline">
+      <label for="series" style="margin:0">Thickness series (nm)</label>
+      <input id="series" value="5, 10, 20, 50" style="max-width:200px">
+      <button id="csv">Download CSV</button>
+    </div>
+  </section>
+
+  <section class="card full">
+    <h2>Model</h2>
+    <p>A spherical particle of diameter <i>D</i> carries a uniform oxide shell of thickness <i>t</i>. With <i>r</i> = <i>D</i>/2,
+      V<sub>p</sub> = 4π<i>r</i>³/3, V<sub>core</sub> = 4π(<i>r</i>−<i>t</i>)³/3 and V<sub>shell</sub> = V<sub>p</sub> − V<sub>core</sub>:</p>
+    <p><b>O (wt.%)</b> = 100 · ρ<sub>ox</sub>V<sub>shell</sub> · f<sub>O</sub> / (ρ<sub>M</sub>V<sub>core</sub> + ρ<sub>ox</sub>V<sub>shell</sub>),
+      where f<sub>O</sub> = 2M<sub>O</sub>/(M<sub>M</sub> + 2M<sub>O</sub>) for MO₂. &nbsp; <b>SSA</b> = 6/(ρ<sub>M</sub>·<i>D</i>).</p>
+    <p class="note">The original notebook (<code>particle_ssa_oxygen.ipynb</code>) uses ρ<sub>M</sub>V<sub>p</sub> instead of ρ<sub>M</sub>V<sub>core</sub> for the metal mass, which counts the shell volume twice and gives slightly lower oxygen for fine powders. Choose “Original notebook formula” to reproduce its curves. Default densities: Ti 4.506, TiO₂ 4.23 (rutile), Zr 6.52, ZrO₂ 5.68, Hf 13.31, HfO₂ 9.68 g/cm³. MIT License © 2025 JongHyeon Lee.</p>
+  </section>
+</main>
+<script>
+const MAT={Ti:{M:47.867,rm:4.506,ro:4.23},Zr:{M:91.224,rm:6.52,ro:5.68},Hf:{M:178.49,rm:13.31,ro:9.68}};
+const MO=15.9994, $=id=>document.getElementById(id);
+function params(){const k=$('metal').value;return{fO:2*MO/(MAT[k].M+2*MO),rm:+$('rhoM').value,ro:+$('rhoO').value,legacy:$('model').value==='legacy',name:k};}
+// D in µm, t in nm -> oxygen wt.%
+function oxygen(D,tnm,p){const r=D/2,t=tnm/1000;if(!(D>0)||t<0)return NaN;const tt=Math.min(t,r);
+  const Vp=r**3,Vc=(r-tt)**3,Vs=Vp-Vc;const mM=p.rm*(p.legacy?Vp:Vc),mO=p.ro*Vs;return 100*mO*p.fO/(mM+mO);}
+function bisect(f,lo,hi,target,inc){for(let i=0;i<200;i++){const m=Math.sqrt(lo*hi);const v=f(m);if((v<target)===inc)lo=m;else hi=m;}return Math.sqrt(lo*hi);}
+const fmt=(x,n=3)=>!isFinite(x)?'–':(Math.abs(x)>=100?x.toFixed(1):x.toPrecision(n));
+function update(){
+  const p=params(),D=+$('dia').value,t=+$('tox').value;
+  $('warn').textContent=(t/1000>=D/2&&D>0)?'Oxide thickness ≥ particle radius: the particle is fully oxidised.':'';
+  const O=oxygen(D,t,p);$('rO').textContent=fmt(O);
+  $('rSSA').textContent=fmt(6/(p.rm*D));
+  const r=D/2,tt=Math.min(t/1000,r);$('rVf').textContent=D>0?fmt(100*(1-((r-tt)/r)**3)):'–';
+  const T=+$('target').value,maxO=100*p.fO;let s='';
+  if(T>0&&T<maxO&&D>0){const tmax=bisect(x=>oxygen(D,x,p),1e-4,D*500,T,true);s+=`At D = ${D} µm, oxygen reaches ${T} wt.% when the oxide is ${fmt(tmax)} nm thick. `;}
+  if(T>0&&T<maxO&&t>0){const Dmin=bisect(x=>oxygen(x,t,p),2*t/1000*1.000001,1e5,T,false);s+=`With a ${t} nm oxide, particles must be at least ${fmt(Dmin)} µm to stay at or below ${T} wt.%.`;}
+  if(T>=maxO)s=`Target exceeds the oxygen content of pure ${p.name}O₂ (${fmt(maxO)} wt.%).`;
+  $('inv').textContent=s;draw(p,D,O);
+}
+function seriesList(){return $('series').value.split(/[,\s]+/).map(Number).filter(x=>x>0).slice(0,8);}
+const COLORS=['#14213d','#7a869a','#2f7dd3','#8e44ad','#c0392b','#16a085','#d35400','#2c3e50'];
+function draw(p,D0,O0){
+  const W=680,H=420,L=64,R=20,Tp=16,B=48,x0=0.1,x1=200,y0=0.002,y1=20;
+  const X=v=>L+(Math.log10(v)-Math.log10(x0))/(Math.log10(x1)-Math.log10(x0))*(W-L-R);
+  const Y=v=>Tp+(Math.log10(y1)-Math.log10(v))/(Math.log10(y1)-Math.log10(y0))*(H-Tp-B);
+  let g='';
+  for(let e=-1;e<=2;e++)for(let m=1;m<10;m++){const v=m*10**e;if(v<x0||v>x1)continue;g+=`<line class="grid" x1="${X(v)}" x2="${X(v)}" y1="${Tp}" y2="${H-B}" ${m===1?'':'opacity=".45"'}/>`;if(m===1)g+=`<text class="tick" x="${X(v)}" y="${H-B+16}" text-anchor="middle">${v}</text>`;}
+  for(let e=-3;e<=1;e++)for(let m=1;m<10;m++){const v=m*10**e;if(v<y0||v>y1)continue;g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" ${m===1?'':'opacity=".45"'}/>`;if(m===1)g+=`<text class="tick" x="${L-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`;}
+  g+=`<line class="axis" x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}"/><line class="axis" x1="${L}" x2="${L}" y1="${Tp}" y2="${H-B}"/>`;
+  g+=`<text class="tick" x="${(L+W-R)/2}" y="${H-10}" text-anchor="middle">${p.name} particle diameter (µm)</text>`;
+  g+=`<text class="tick" transform="translate(16 ${(Tp+H-B)/2}) rotate(-90)" text-anchor="middle">Oxygen (wt.%)</text>`;
+  seriesList().forEach((t,i)=>{let d='';for(let k=0;k<=240;k++){const D=x0*(x1/x0)**(k/240);const v=oxygen(D,t,p);if(v>=y0&&v<=y1)d+=(d?'L':'M')+X(D).toFixed(1)+' '+Y(v).toFixed(1);}
+    g+=`<path d="${d}" fill="none" stroke="${COLORS[i]}" stroke-width="2"/>`;
+    g+=`<line x1="${W-R-110}" x2="${W-R-90}" y1="${Tp+14+i*17}" y2="${Tp+14+i*17}" stroke="${COLORS[i]}" stroke-width="2"/><text class="legend" x="${W-R-84}" y="${Tp+18+i*17}">${t} nm</text>`;});
+  if(O0>=y0&&O0<=y1&&D0>=x0&&D0<=x1)g+=`<circle cx="${X(D0)}" cy="${Y(O0)}" r="5" fill="#e74c3c"/>`;
+  $('plot').innerHTML=g;
+}
+function csv(){const p=params(),S=seriesList();let s='Diameter (um),SSA (m2/g),'+S.map(t=>`O wt% (${t} nm)`).join(',')+'\n';
+  for(let i=1;i<2000;i++){const D=i*0.1;s+=[D.toFixed(1),(6/(p.rm*D)).toPrecision(6),...S.map(t=>oxygen(D,t,p).toPrecision(6))].join(',')+'\n';}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'text/csv'}));a.download=`oxygen_${p.name}_${p.legacy?'legacy':'coreshell'}.csv`;a.click();}
+function setMetal(){const m=MAT[$('metal').value];$('rhoM').value=m.rm;$('rhoO').value=m.ro;update();}
+$('metal').addEventListener('change',setMetal);
+['rhoM','rhoO','dia','tox','model','target','series'].forEach(id=>$(id).addEventListener('input',update));
+$('csv').addEventListener('click',csv);
+setMetal();
+</script>
+</body>
+</html>
